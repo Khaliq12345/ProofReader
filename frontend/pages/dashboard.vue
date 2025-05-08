@@ -113,6 +113,10 @@ const downloadOutput = async () => {
     // document.body.appendChild(link);
     // link.click();
     // window.URL.revokeObjectURL(url); // Libérer la mémoire
+    // window.open(
+    //   `${config.public.socketUrl}/api/files/${encodeURIComponent(selectedFile.value)}`,
+    //   '_blank'
+    // );
 
     showToast('Success', "Successfully Downloaded the file", 'i-heroicons-check-badge', 'success');
 
