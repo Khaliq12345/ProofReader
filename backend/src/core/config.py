@@ -12,8 +12,8 @@ GENAI_KEY = os.getenv("GENAI_KEY")
 LOG_DIR = "./logs"
 
 # file dir
-INPUT_DIR = "/home/khaliq/Documents/Upworks/ProofReader/inputs"
-OUTPUT_DIR = "/home/khaliq/Documents/Upworks/ProofReader/outputs"
+INPUT_DIR = "../inputs"
+OUTPUT_DIR = "../outputs"
 
 # Database
 SQLITE_URL = "sqlite:///status.db"
