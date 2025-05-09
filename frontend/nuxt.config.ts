@@ -8,4 +8,16 @@ export default defineNuxtConfig({
       urlAPI: process.env.API_URL,
      },
   },
+  nitro: {
+    storage: {
+      uploads: {
+        driver: 'fs',
+        base: process.env.ABSOLUTE_PATH
+      },
+      ouputs: {
+        driver: 'fs',
+        base: process.env.OUTPUT_PATH
+      }
+    }
+  }
 })
