@@ -63,7 +63,16 @@ async def run_task(folder_path: str, folder_name: str, file_names: list[str]):
             logger.error(str(e))
 
 
-@app.post("/analyse-document")
+@app.post("/api/login")
+async def login(email: str, password: str):
+    # validate credential
+    if (email == config.EMAIL) and (password == config.PASSWORD):
+        return {"detail": "success"}
+
+    raise HTTPException(status_code=404, detail="Incorrect credentials")
+
+
+@app.post("/api/analyse-document")
 async def analyse_document(
     backgroundtask: BackgroundTasks, file_names: list[str]
 ) -> dict:
@@ -84,10 +93,10 @@ async def analyse_document(
         logger.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
-    return {"status": "started", "output_folder": folder_path}  # test the error
+    return {"status": "started", "output_folder": folder_name}  # test the error
 
 
-@app.get("/check-status/{folder}")
+@app.get("/api/check-status/{folder}")
 def check_status_of_folder(folder: str):
     # check status of the specified task
     with database_service.get_session() as session:
