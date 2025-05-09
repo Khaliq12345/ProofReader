@@ -1,6 +1,6 @@
 pandas
 fastapi[all]
-python3-dotenv
+python-dotenv
 sqlmodel
 pydantic
 loguru

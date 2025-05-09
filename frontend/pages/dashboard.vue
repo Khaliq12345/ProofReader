@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import TopInfos from '../components/dashboard/TopInfos.vue';
 import Loading from '../components/Loading.vue';
+
 // Notifications
 const { showToast } = useNotifications();
 // Files
+const filesList: Ref<string[]> = ref([]);
 const selectedFiles = ref();
-const isImporting = ref(false);
-const uploadProgress = ref(0);
+const isUploading = ref(false);
 const importError = ref();
 const importSuccess = ref(false);
 const handleFileChange = (event: any) => {
@@ -14,119 +15,171 @@ const handleFileChange = (event: any) => {
   selectedFiles.value = inputElement.files;
   // console.log(selectedFiles.value);
 };
-const importFile = async () => {
+const uploadFile = async () => {
   if (!selectedFiles.value || selectedFiles.value.length === 0) {
     importError.value = 'Select at Least one File .';
     return;
   }
-  isImporting.value = true;
-  uploadProgress.value = 0;
+  isUploading.value = true;
   importError.value = null;
   importSuccess.value = false;
-
   const formData = new FormData();
   for (let i = 0; i < selectedFiles.value.length; i++) {
-    formData.append('files', selectedFiles.value[i]);
+    const file = selectedFiles.value[i];
+    const timestamp = Date.now().toString();
+    const newFileName = timestamp + '_' + file.name.trim();
+    const newFile = new File([file], newFileName, { type: file.type, lastModified: file.lastModified });
+    formData.append('files', newFile);
+    filesList.value.push(newFileName);
   }
-
   try {
-    // const response = await axios.post(urlAPI + '/upload', formData, {
-    //   headers: {
-    //     'Content-Type': 'multipart/form-data',
-    //   },
-    //   onUploadProgress: (progressEvent: any) => {
-    //     uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-    //   },
-    // });
-    setInterval(() => {
-      uploadProgress.value = uploadProgress.value + 10;
-      if (uploadProgress.value == 100) {
-        isImporting.value = false;
-        importSuccess.value = true;
-      }
-    }, 500);
-
-
-    // console.log('Upload successful:', response.data);
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+    // console.log("Upload response : ", response)
+    // console.log("filesList.value : ", filesList.value)
+    importSuccess.value = true;
   } catch (error) {
     importError.value = 'Error while uploading your file !';
     console.error('Upload error:', error);
   } finally {
-    // isImporting.value = false;
+    isUploading.value = false;
   }
 }
+
 // Processing
 const processingStarted = ref(false);
+const processingError = ref(false);
 const processingDone = ref(false);
 const isDownloading = ref(false);
-const startProcessing = async () => {
-  processingStarted.value = false;
-  processingDone.value = false;
-  // const accessToken = sessionStorage.getItem('AccessToken');
-  // const refToken = sessionStorage.getItem('RefreshToken');
-  try {
-    // const response = await axios.get(urlAPI + "/start_sprocessing",
-    //     {
-    //         params: {
-    //             access_token: accessToken,
-    //             refresh_token: refToken,
-    //         },
-    //         headers: {
-    //             "accept": "application/json",
-    //             "content-type": "application/x-www-form-urlencoded",
-    //         },
-    //     },
-    // );
-
-    // 
-    processingStarted.value = true;
-    showToast('Success', "Successfully Started Processing. Once Ready, you'll be able to dowload the outputs", 'i-heroicons-check-badge', 'success');
-    // Store Renewed Tokens
-    // sessionStorage.setItem('AccessToken', response.data.session.session.access_token);
-    // sessionStorage.setItem('RefreshToken', response.data.session.session.refresh_token);
-    // sessionStorage.setItem('ExpiresAt', response.data.session.session.expires_at);
-
-  } catch (err) {
-    console.error('Erreur de requete:', err);
-    showToast('Error !', "Failled to Start Scraping, maybe server error !", 'i-heroicons-exclamation-triangle', 'error');
-  } finally {
-    // 
-    setTimeout(() => {
-      processingDone.value = true;
-    }, 10000);
+const outputFile = ref<string>()
+const isWatching = ref(false)
+let eventSource: EventSource | null = null
+// Start Watching
+const startWatching = (folder: string) => {
+  stopWatching() // Stop Any Watch
+  eventSource = new EventSource(`/api/watch-output?folder=${encodeURIComponent(folder)}`)
+  isWatching.value = true
+  eventSource.onmessage = (event) => {
+    const data = JSON.parse(event.data)
+    console.log("got Something -- ", data)
+    if (data.event === 'new-file') {
+      outputFile.value = data.file
+      showToast('Succes ', `Output File is now Available for download !`, 'i-heroicons-document', 'success')
+      localStorage.setItem('output_file', data.file)
+      processingDone.value = true
+      processingError.value = false
+      stopWatching()
+    }
   }
-
+  eventSource.onerror = () => {
+    console.error('Error connecting to SSE')
+    stopWatching()
+  }
 }
+// Stop The Watching
+const stopWatching = () => {
+  eventSource?.close()
+  eventSource = null
+  isWatching.value = false
+}
+// Download File
 const downloadOutput = async () => {
-  isDownloading.value = true;
+  let filename = outputFile.value ?? ""
   try {
-
-    // const response = await axios.get('/api/download-file', { // Remplacez '/api/download-file' par l'URL de votre API pour le téléchargement
-    //   responseType: 'blob', // Indique à Axios de traiter la réponse comme un Blob (données binaires)
-    // });
-
-    // const blob = new Blob([response.data]);
-    // const url = window.URL.createObjectURL(blob);
-    // const link = document.createElement('a');
-    // link.href = url;
-    // link.setAttribute('download', 'nom_du_fichier_telecharge.ext'); // Remplacez 'nom_du_fichier_telecharge.ext' par le nom de fichier souhaité
-    // document.body.appendChild(link);
-    // link.click();
-    // window.URL.revokeObjectURL(url); // Libérer la mémoire
-    // window.open(
-    //   `${config.public.socketUrl}/api/files/${encodeURIComponent(selectedFile.value)}`,
-    //   '_blank'
-    // );
-
-    showToast('Success', "Successfully Downloaded the file", 'i-heroicons-check-badge', 'success');
-
+    isDownloading.value = true;
+    const response = await $fetch('/api/download', {
+      query: { file: filename },
+      responseType: 'blob'
+    })
+    const url = URL.createObjectURL(response)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+    // showToast('Success', "Successfully Downloaded the file", 'i-heroicons-check-badge', 'success');
   } catch (err) {
     console.error('Erreur de requete:', err);
-    showToast('Error !', "Failled to Download the file !", 'i-heroicons-exclamation-triangle', 'error');
+    // showToast('Error !', "Failled to Download the file !", 'i-heroicons-exclamation-triangle', 'error');
   } finally {
     isDownloading.value = false;
   }
 }
+const startProcessing = async () => {
+  processingStarted.value = false;
+  processingDone.value = false;
+  processingError.value = false;
+  try {
+    const response = await $fetch('/api/analyse-document', {
+      method: 'POST',
+      body: filesList.value,
+    }) as any;
+    console.log("processing result : ", response)
+    localStorage.setItem('output_folder', response.output_folder.split(/[\\/]/).pop());
+    // 
+    // Also Start Watching the output folder
+    let folder = localStorage.getItem('output_folder') ?? ""
+    startWatching(folder)
+    // 
+    // We can Start checking Status
+    processingStarted.value = true;
+    showToast('Success', "Successfully Started Processing. Once Ready, you'll be able to dowload the outputs", 'i-heroicons-check-badge', 'success');
+    // 
+  } catch (err) {
+    console.error('Erreur de requete:', err);
+    showToast('Error !', "Failled to Start Processing, maybe server error !", 'i-heroicons-exclamation-triangle', 'error');
+  } finally {
+    // 
+  }
+}
+const checkStatus = async () => {
+  processingDone.value = false
+  processingError.value = false
+  console.log("folder",localStorage.getItem('output_folder'))
+  try {
+    const response = await $fetch('/api/check-status', {
+      method: 'GET',
+      params: {
+        'folder': localStorage.getItem('output_folder')
+      }
+    }) as any
+    console.log("status : ", response)
+    if (response.status == 'success') {
+      processingDone.value = true;
+      showToast('Success', "Last Processing Successfully Completed.", 'i-heroicons-check-badge', 'success');
+    } else {
+      showToast('Infos !', `Last Processing Failled : got status  -- ${response.status} --`, 'i-heroicons-exclamation-triangle', 'error');
+      processingStarted.value = false
+      processingError.value = true
+    }
+  } catch (error) {
+    console.error('Erreur de requete:', error);
+    showToast('Error !', "Last Processing Failled ", 'i-heroicons-exclamation-triangle', 'error');
+    processingStarted.value = false
+    processingError.value = true
+  }
+}
+// Mounting this page
+onMounted(async () => {
+  if (localStorage.getItem('output_file')) {
+    outputFile.value = localStorage.getItem('output_file') ?? undefined
+  }
+  if (localStorage.getItem('output_folder')) {
+    checkStatus()
+  }
+  // Check Status if something is going
+  setInterval(() => {
+    if (processingStarted.value == true) {
+      checkStatus()
+    }
+  }, 20000);
+})
+// UnMounting this page
+onUnmounted(() => {
+  stopWatching()
+})
 </script>
 
 <template>
@@ -141,17 +194,17 @@ const downloadOutput = async () => {
           <h1 class="text-2xl font-bold mb-4">Start By Uploading Your Files</h1>
           <!-- Files Input -->
           <UButtonGroup class="my-3 ">
-            <UInput type="file" multiple icon="i-heroicons-document-duplicate" @change="handleFileChange"
-              accept=".doc, .pdf" />
-            <UButton class="text-white" :disabled="!selectedFiles" :loading="isImporting" @click="importFile"
+            <UInput type="file" accept=".doc, .docx, .pdf" multiple icon="i-heroicons-document-duplicate"
+              @change="handleFileChange" />
+            <UButton class="text-white" :disabled="!selectedFiles" :loading="isUploading" @click="uploadFile"
               label="Upload" color="primary" icon="i-heroicons-arrow-down-tray" />
           </UButtonGroup>
-          <!-- <div class="" v-if="selectedFiles">
-            Got Files
-          </div> -->
+          <div class="my-2 font-bold text-info-800" v-if="selectedFiles">
+            {{ selectedFiles.length }} File(s) Selected !
+          </div>
           <!-- Loading Upload -->
-          <UProgress v-if="isImporting" :value="uploadProgress" :max="100" class="mt-4 mb-2" />
-          <p v-if="isImporting">Uploading : <span class="font-bold text-info-600">{{ uploadProgress }}</span> %</p>
+          <UProgress v-if="isUploading" :max="100" class="mt-4 mb-2 font-bold text-info-600" />
+          <p v-if="isUploading">... Uploading ...</p>
           <!-- When Error -->
           <UAlert v-if="importError" :title="importError" color="error" class="mt-2 mb-4"
             close-icon="i-heroicons-x-mark" icon="i-heroicons-exclamation-triangle" />
@@ -173,7 +226,12 @@ const downloadOutput = async () => {
             <p class="text-gray-900 mt-1">We are processing your Files ...</p>
           </div>
           <!-- Outputs -->
-          <div v-if="processingDone" class="flex flex-col place-items-center py-5">
+          <div v-if="processingError" class="my-4 flex justify-center">
+            <!-- On Processing Error -->
+            <UAlert color="error" variant="subtle" typ title="Last Processing Failled !" class="my-3 md:w-2/3 lg:w-1/2"
+              close-icon="i-heroicons-x-mark" icon="i-heroicons-check-badge" />
+          </div>
+          <div v-if="processingDone && outputFile && !processingError" class="flex flex-col place-items-center py-5">
             <!-- <img class="w-30 h-30" src="../public/api-process.gif" alt="Animated GIF"> -->
             <div class="my-8">
               <UButton class="text-white rounded-full h-35 w-35 cursor-pointer" @click="downloadOutput" color="primary">
@@ -183,7 +241,9 @@ const downloadOutput = async () => {
                 </div>
               </UButton>
             </div>
-            <p class="text-gray-900 mt-1">Now Just Download the Outputs !</p>
+            <p class="text-gray-900 mt-1">Last Processing Completed. Just Download the Outputs !</p>
+            <UAlert color="success" variant="subtle" typ title="Successfully processed your Files !"
+              class="my-3 md:w-2/3 lg:w-1/2" close-icon="i-heroicons-x-mark" icon="i-heroicons-check-badge" />
           </div>
         </div>
       </div>

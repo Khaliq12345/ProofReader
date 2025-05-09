@@ -6,6 +6,20 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       urlAPI: process.env.API_URL,
+      inputsPath: process.env.INPUTS_PATH,
+      outputsPath: process.env.OUTPUTS_PATH,
      },
   },
+  nitro: {
+    storage: {
+      uploads: {
+        driver: 'fs',
+        base: process.env.INPUTS_PATH
+      },
+      outputs: {
+        driver: 'fs',
+        base: process.env.OUTPUTS_PATH
+      }
+    }
+  }
 })
