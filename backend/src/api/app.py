@@ -11,12 +11,15 @@ from src.models.status_database import create_db_and_tables
 from src.models.status_database import Status
 from src.services import database_service
 
-from src.utils import create_folders
+from src.utils import create_folders, file_to_zip
 
 from sqlmodel import select
 import os
 from datetime import datetime
+import asyncio
 
+
+sem = asyncio.Semaphore(5)  # Limit to 5 concurrent tasks
 
 app = FastAPI(
     title="ProofReader",
@@ -45,12 +48,6 @@ async def run_task(folder_path: str, folder_name: str, file_names: list[str]):
                 parsed=parsed,
                 output_filename=os.path.join(folder_path, f"analysed_{file_name}.csv"),
             )
-            with database_service.get_session() as session:
-                stmt = select(Status).where(Status.folder_name == folder_name)
-                status = session.exec(stmt).one()
-                if status:
-                    status.folder_name = folder_name
-                    status.status = "success"
         except Exception as e:
             # update the task status with the error
             with database_service.get_session() as session:
@@ -59,8 +56,18 @@ async def run_task(folder_path: str, folder_name: str, file_names: list[str]):
                 if status:
                     status.folder_name = folder_name
                     status.status = "failed"
-
             logger.error(str(e))
+
+    # convert folder to zip
+    file_to_zip.zip_folder(folder_path, os.path.join(folder_path, "output.zip"))
+
+    # update status in database
+    with database_service.get_session() as session:
+        stmt = select(Status).where(Status.folder_name == folder_name)
+        status = session.exec(stmt).one()
+        if status:
+            status.folder_name = folder_name
+            status.status = "success"
 
 
 @app.post("/api/login")
