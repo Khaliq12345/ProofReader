@@ -54,36 +54,6 @@ const processingError = ref(false);
 const processingDone = ref(false);
 const isDownloading = ref(false);
 const outputFile = ref<string>()
-const isWatching = ref(false)
-let eventSource: EventSource | null = null
-// Start Watching
-const startWatching = (folder: string) => {
-  stopWatching() // Stop Any Watch
-  eventSource = new EventSource(`/api/watch-output?folder=${encodeURIComponent(folder)}`)
-  isWatching.value = true
-  eventSource.onmessage = (event) => {
-    const data = JSON.parse(event.data)
-    console.log("got Something -- ", data)
-    if (data.event === 'new-file') {
-      outputFile.value = data.file
-      showToast('Succes ', `Output File is now Available for download !`, 'i-heroicons-document', 'success')
-      localStorage.setItem('output_file', data.file)
-      processingDone.value = true
-      processingError.value = false
-      stopWatching()
-    }
-  }
-  eventSource.onerror = () => {
-    console.error('Error connecting to SSE')
-    stopWatching()
-  }
-}
-// Stop The Watching
-const stopWatching = () => {
-  eventSource?.close()
-  eventSource = null
-  isWatching.value = false
-}
 // Download File
 const downloadOutput = async () => {
   let filename = outputFile.value ?? ""
@@ -117,11 +87,7 @@ const startProcessing = async () => {
       body: filesList.value,
     }) as any;
     console.log("processing result : ", response)
-    localStorage.setItem('output_folder', response.output_folder.split(/[\\/]/).pop());
-    // 
-    // Also Start Watching the output folder
-    let folder = localStorage.getItem('output_folder') ?? ""
-    startWatching(folder)
+    localStorage.setItem('output_folder', response.output_folder);
     // 
     // We can Start checking Status
     processingStarted.value = true;
@@ -137,18 +103,22 @@ const startProcessing = async () => {
 const checkStatus = async () => {
   processingDone.value = false
   processingError.value = false
-  console.log("folder",localStorage.getItem('output_folder'))
+  let folder = localStorage.getItem('output_folder')
   try {
     const response = await $fetch('/api/check-status', {
       method: 'GET',
       params: {
-        'folder': localStorage.getItem('output_folder')
+        'folder': folder
       }
     }) as any
     console.log("status : ", response)
     if (response.status == 'success') {
       processingDone.value = true;
+      outputFile.value = folder + "/output.zip"
+      localStorage.setItem('output_file', outputFile.value )
       showToast('Success', "Last Processing Successfully Completed.", 'i-heroicons-check-badge', 'success');
+    } else if(response.status == null){
+      return;
     } else {
       showToast('Infos !', `Last Processing Failled : got status  -- ${response.status} --`, 'i-heroicons-exclamation-triangle', 'error');
       processingStarted.value = false
@@ -171,14 +141,14 @@ onMounted(async () => {
   }
   // Check Status if something is going
   setInterval(() => {
-    if (processingStarted.value == true) {
+    if (processingStarted.value == true && processingDone.value != true) {
       checkStatus()
     }
-  }, 20000);
+  }, 10000);
 })
-// UnMounting this page
-onUnmounted(() => {
-  stopWatching()
+// 
+definePageMeta({
+  middleware: ["auth"]
 })
 </script>
 

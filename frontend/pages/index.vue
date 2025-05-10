@@ -1,9 +1,15 @@
 <script setup>
 import Loading from '../components/Loading.vue';
-
+import {useAuth} from '../composables/useAuth'
+const {isLoginExpired } = useAuth();
 const router = useRouter();
 onMounted(async () => {
-  router.push('/login');
+  if (isLoginExpired()) {
+    router.push('/login');
+      } else {
+        router.push('/dashboard');
+      }
+  
 });
 </script>
 

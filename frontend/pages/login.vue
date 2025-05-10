@@ -37,7 +37,7 @@ function changepage() {
                     <div class="overlay-panel overlay-right">
                         <h1>Hello, Friend !</h1>
                         <p>Enter your personal details and get rolled up</p>
-                        <button class="ghost" id="signUp" @click="login_mode = false">Sign Up</button>
+                        <!-- <button class="ghost" id="signUp" @click="login_mode = false">Sign Up</button> -->
                     </div>
                 </div>
             </div>

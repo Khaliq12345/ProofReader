@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import { useAuth } from '../composables/useAuth'
+const { setLoginTime } = useAuth();
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const isLoading = ref(false)
 const error = ref('')
 const router = useRouter()
-// const config = useRuntimeConfig();
-// const urlAPI = config.public.urlAPI;
 defineEmits(['signup'])
 // Handle User's login
 const handleLogin = async () => {
@@ -14,21 +14,20 @@ const handleLogin = async () => {
     error.value = ''
     try {
         // Login
-        // const response = await $fetch('/api/login', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Accept': 'application/json',
-        //     },
-        //     params: {
-        //         email: email.value,
-        //         password: password.value,
-        //     },
-        // }) as any
-        // // Store tokens
-        // sessionStorage.setItem('AccessToken', response.data.details.session.access_token);
-        // sessionStorage.setItem('RefreshToken', response.data.details.session.refresh_token);
-        // sessionStorage.setItem('ExpiresAt', response.data.details.session.expires_at);
-        // // 
+        const response = await $fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+            },
+            params: {
+                email: email.value,
+                password: password.value,
+            },
+        }) as any
+        // 
+        // Store Login Time
+        setLoginTime()
+        // 
         router.push('/dashboard') // 
     } catch (err: any) {
         console.error('Erreur lors de la connexion:', err);
@@ -49,15 +48,17 @@ const handleLogin = async () => {
         <form @submit.prevent="handleLogin" class="space-y-4">
             <UAlert v-if="error" :title="error" icon="i-heroicons-exclamation-circle" color="error" variant="subtle" />
             <UFormField label="Email" name="email" required>
-                <UInput required v-model="email" type="email" placeholder="youremail@email.com" icon="i-heroicons-envelope"
-                    size="lg" class="w-full [&_input]:text-black [&_input]:dark:text-black"  autofocus />
+                <UInput required v-model="email" type="email" placeholder="youremail@email.com"
+                    icon="i-heroicons-envelope" size="lg" class="w-full [&_input]:text-black [&_input]:dark:text-black"
+                    autofocus />
             </UFormField>
             <UFormField label="Password" name="password" required>
                 <UInput required v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="••••••••"
-                    icon="i-heroicons-lock-closed" class="w-full [&_input]:text-black [&_input]:dark:text-black"  size="lg">
+                    icon="i-heroicons-lock-closed" class="w-full [&_input]:text-black [&_input]:dark:text-black"
+                    size="lg">
                     <template #trailing>
                         <UButton variant="ghost" :icon="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
-                             @click="showPassword = !showPassword" />
+                            @click="showPassword = !showPassword" />
                     </template>
                 </UInput>
             </UFormField>
@@ -65,7 +66,7 @@ const handleLogin = async () => {
             <UButton class="text-white" type="submit" block size="lg" color="primary" :loading="isLoading"
                 label="Log In" />
             <div class="text-center">
-                <h5>Don't have an account ? <a @click="$emit('signup')" class="text-info-500">Sign Up</a></h5>
+                <!-- <h5>Don't have an account ? <a @click="$emit('signup')" class="text-info-500">Sign Up</a></h5> -->
             </div>
         </form>
     </div>

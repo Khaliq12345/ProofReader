@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   const urlAPI = config.public.urlAPI;
 
   try {
-    const response = await $fetch(`check-status/${params.folder}`, {
+    const response = await $fetch(`api/check-status/${params.folder}`, {
       baseURL: urlAPI,
       method: 'GET',
       // params: params, 

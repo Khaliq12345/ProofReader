@@ -20,3 +20,7 @@ SQLITE_URL = "sqlite:///status.db"
 
 connect_args = {"check_same_thread": False}
 engine = create_engine(SQLITE_URL, connect_args=connect_args)
+
+# Admin credential
+EMAIL = os.getenv("EMAIL")
+PASSWORD = os.getenv("PASSWORD")

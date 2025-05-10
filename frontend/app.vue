@@ -1,8 +1,11 @@
 <template>
   <div>
-    <UApp class="text-info-500">
+    <ClientOnly >
+      <UApp class="text-info-500">
       <NuxtPage></NuxtPage>
     </UApp>
+    </ClientOnly>
+    
   </div>
 </template>
 

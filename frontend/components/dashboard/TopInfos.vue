@@ -2,10 +2,10 @@
 // LogOut
 const router = useRouter();
 const handleLogout = async () => {
-  // Supprimer les informations de session
-  sessionStorage.removeItem('AccessToken');
-  sessionStorage.removeItem('RefreshToken');
-  sessionStorage.removeItem('ExpiresAt');
+  // Remove Stored Infos
+  localStorage.removeItem('login_time');
+  localStorage.removeItem('output_file');
+  localStorage.removeItem('output_folder');
   router.push('/login');
 };
 </script>

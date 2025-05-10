@@ -1,21 +1,24 @@
 export default defineEventHandler(async (event) => {
-  // const query = getQuery(event); 
-  const body = await readBody(event);
+  const query = getQuery(event); 
+  // const headers = getRequestHeaders(event);
   const config = useRuntimeConfig();
   const urlAPI = config.public.urlAPI;
+
+  const params = {
+    email: query.email,
+    password: query.password,
+  };
+
 
   try {
     const response = await $fetch(event.path, {
       baseURL: urlAPI,
       method: 'POST',
-      body: JSON.stringify(body),
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
+      params: params, // 
     });
 
     return response; // 
+
 
   } catch (err: any) {
     console.error("Erreur lors de l'appel à l'API distante :", err?.message);
