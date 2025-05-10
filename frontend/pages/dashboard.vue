@@ -82,6 +82,8 @@ const startProcessing = async () => {
   processingDone.value = false;
   processingError.value = false;
   try {
+    processingStarted.value = true;
+    // 
     const response = await $fetch('/api/analyse-document', {
       method: 'POST',
       body: filesList.value,
@@ -89,13 +91,13 @@ const startProcessing = async () => {
     console.log("processing result : ", response)
     localStorage.setItem('output_folder', response.output_folder);
     // 
-    // We can Start checking Status
-    processingStarted.value = true;
+    //
     showToast('Success', "Successfully Started Processing. Once Ready, you'll be able to dowload the outputs", 'i-heroicons-check-badge', 'success');
     // 
   } catch (err) {
     console.error('Erreur de requete:', err);
     showToast('Error !', "Failled to Start Processing, maybe server error !", 'i-heroicons-exclamation-triangle', 'error');
+    processingStarted.value = false;
   } finally {
     // 
   }
